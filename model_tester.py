@@ -1,8 +1,9 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 import learners.DecisionTreeClassification as dt
+import learners.NeuralNetworkClassification as mlp
 from sklearn import metrics
 
 
@@ -29,6 +30,41 @@ def hot_encoder(X):
     return X
 
 
+def run_decision_tree(X_train, y_train, X_test, y_test):
+    args = {"criterion": 'entropy', "splitter": "random", "max_depth": 7, "min_samples_split": 300,
+            "min_samples_leaf": 50}
+    model = dt.DecisionTreeClassification(args)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    cm = metrics.confusion_matrix(y_test, y_pred)
+    print(metrics.accuracy_score(y_test, y_pred))
+
+
+def run_decision_tree_cross_validation(X, y):
+    args = {"criterion": 'entropy', "splitter": "random", "max_depth": 7, "min_samples_split": 300,
+            "min_samples_leaf": 50}
+    model = dt.DecisionTreeClassification(args)
+    classifier = model.get_skl_learner()
+    all_accuracies = cross_val_score(estimator=classifier, X=X, y=y, cv=10)
+    print(all_accuracies.mean())
+
+
+def run_neural_network(X_train, y_train, X_test, y_tes):
+    args = {"activation": "tanh", "max_iter": 1000}
+    model = mlp.NeuralNetworkClassification(args)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    cm = metrics.confusion_matrix(y_test, y_pred)
+    print(metrics.accuracy_score(y_test, y_pred))
+
+
+def run_neural_network_cross_validation(X, y):
+    args = {"activation": "tanh", "max_iter": 1000}
+    model = mlp.NeuralNetworkClassification(args)
+    all_accuracies = cross_val_score(estimator=model.get_learner(), X=X, y=y, cv=10)
+    print(all_accuracies.mean())
+
+
 if __name__ == '__main__':
     np.set_printoptions(threshold=np.inf)
     dataset = read_data("Churn_Modelling.csv")
@@ -36,10 +72,7 @@ if __name__ == '__main__':
     X = label_encoder(X)
     X = hot_encoder(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-    args = {"criterion": 'entropy', "splitter": "random", "max_depth": 7, "min_samples_split": 300,
-            "min_samples_leaf": 50}
-    model = dt.DecisionTreeClassifier(**args)
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    cm = metrics.confusion_matrix(y_test, y_pred)
-    print(metrics.accuracy_score(y_test, y_pred))
+    run_decision_tree(X_train, y_train, X_test, y_test)
+    run_decision_tree_cross_validation(X, y)
+    run_neural_network(X_train, y_train, X_test, y_test)
+    run_neural_network_cross_validation(X, y)
